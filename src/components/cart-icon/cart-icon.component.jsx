@@ -5,11 +5,11 @@ import { CartContext } from "../../contexts/cart.context";
 import { CartIconContainer, ItemCount, ShoppingIcon } from "./cart-icon.styles";
 
 const CartIcon = () => {
-  const { viewCart, setViewCart, cartItems, cartCount } =
+  const { isCartOpen, setIsCartOpen, cartItems, cartCount } =
     useContext(CartContext);
 
   const toggleViewCart = () => {
-    setViewCart(!viewCart);
+    setIsCartOpen(!isCartOpen);
   };
 
   return (

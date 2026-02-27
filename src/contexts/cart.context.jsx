@@ -1,4 +1,11 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useReducer } from "react";
+
+import { createAction } from "../utils/reducer/reducer.utils";
+
+const CART_ACTION_TYPES = {
+  SET_CART_ITEMS: "SET_CART_ITEMS",
+  SET_IS_CART_OPEN: "SET_IS_CART_OPEN",
+};
 
 const addCartItem = (cartItems, productToAdd) => {
   const existingCartItem = cartItems.find(
@@ -21,19 +28,15 @@ const subCartItem = (cartItems, productToSub) => {
     (cartItem) => cartItem.id === productToSub.id,
   );
 
-  if (existingCartItem && existingCartItem.quantity <= 1) {
+  if (existingCartItem.quantity <= 1) {
     return removeCartItem(cartItems, productToSub);
   }
 
-  if (existingCartItem) {
-    return cartItems.map((cartItem) =>
-      cartItem.id === productToSub.id
-        ? { ...cartItem, quantity: cartItem.quantity - 1 }
-        : cartItem,
-    );
-  }
-
-  return [...cartItems];
+  return cartItems.map((cartItem) =>
+    cartItem.id === productToSub.id
+      ? { ...cartItem, quantity: cartItem.quantity - 1 }
+      : cartItem,
+  );
 };
 
 const removeCartItem = (cartItems, productToRemove) => {
@@ -42,9 +45,8 @@ const removeCartItem = (cartItems, productToRemove) => {
 
 // the actual context value(s)
 export const CartContext = createContext({
-  viewCart: false,
-  setViewCart: () => {},
-  hideCart: () => {},
+  isCartOpen: false,
+  setIsCartOpen: () => {},
   cartItems: [],
   addItemToCart: () => {},
   subtractItemFromCart: () => {},
@@ -53,49 +55,77 @@ export const CartContext = createContext({
   cartTotal: 0,
 });
 
+const INITIAL_STATE = {
+  cartCount: 0,
+  cartTotal: 0,
+  cartItems: [],
+  isCartOpen: false,
+};
+
+const cartReducer = (state, action) => {
+  const { type, payload } = action;
+
+  switch (type) {
+    case CART_ACTION_TYPES.SET_CART_ITEMS:
+      return {
+        ...state,
+        ...payload,
+      };
+    case CART_ACTION_TYPES.SET_IS_CART_OPEN:
+      return {
+        ...state,
+        isCartOpen: payload,
+      };
+    default:
+      throw new Error(`Unhandled type ${type} in cartReducer`);
+  }
+};
+
 // the component that defines the scope for the context
 export const CartProvider = ({ children }) => {
-  const [viewCart, setViewCart] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
-  const [cartCount, setCartCount] = useState(0);
-  const [cartTotal, setCartTotal] = useState(0);
+  const [{ cartItems, cartCount, cartTotal, isCartOpen }, dispatch] =
+    useReducer(cartReducer, INITIAL_STATE);
 
-  useEffect(() => {
+  const updateCartItemsReducer = (cartItems) => {
     const newCartCount = cartItems.reduce((accumulator, currentItem) => {
       return accumulator + currentItem.quantity;
     }, 0);
 
-    setCartCount(newCartCount);
-  }, [cartItems]);
-
-  useEffect(() => {
     const newCartTotal = cartItems.reduce((acc, curr) => {
       return acc + curr.price * curr.quantity;
     }, 0);
 
-    setCartTotal(newCartTotal);
-  }, [cartItems]);
-
-  const hideCart = () => {
-    setViewCart(false);
+    dispatch(
+      createAction(CART_ACTION_TYPES.SET_CART_ITEMS, {
+        cartItems,
+        cartTotal: newCartTotal,
+        cartCount: newCartCount,
+      }),
+    );
   };
 
   const addItemToCart = (productToAdd) => {
-    setCartItems(addCartItem(cartItems, productToAdd));
+    const newCartItems = addCartItem(cartItems, productToAdd);
+    updateCartItemsReducer(newCartItems);
   };
 
   const subtractItemFromCart = (productToSub) => {
-    setCartItems(subCartItem(cartItems, productToSub));
+    const newCartItems = subCartItem(cartItems, productToSub);
+    updateCartItemsReducer(newCartItems);
   };
 
   const removeItemFromCart = (productToRemove) => {
-    setCartItems(removeCartItem(cartItems, productToRemove));
+    const newCartItems = removeCartItem(cartItems, productToRemove);
+    updateCartItemsReducer(newCartItems);
+  };
+
+  const setIsCartOpen = (isCartOpen) => {
+    dispatch(createAction(CART_ACTION_TYPES.SET_IS_CART_OPEN, isCartOpen));
   };
 
   const value = {
-    viewCart,
-    setViewCart,
-    hideCart,
+    isCartOpen,
+    setIsCartOpen,
     cartItems,
     addItemToCart,
     subtractItemFromCart,
