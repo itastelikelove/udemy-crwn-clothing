@@ -31,19 +31,5 @@ export const CartItems = styled.div`
   height: 240px;
   display: flex;
   flex-direction: column;
-  overflow: scroll;
+  overflow: auto;
 `;
-
-// TODO: check if any of this remainder is important
-// .cart-dropdown-container {
-
-//     .empty-message {
-//     }
-
-//     .cart-items {
-//     }
-
-//     button {
-//         margin-top: auto;
-//     }
-// }
